@@ -144,7 +144,10 @@ def write_mesh(filename, mesh_data, format='VTK'):
     if np.min(cells) < 0:
         raise ValueError('Old format assumed but new format mesh (Node IDs start at 0)')
     grid = pv.UnstructuredGrid(cells, cell_types, points)
-    grid['elementOrientations'] = mesh_data['elementOrientations']
+    orient = np.array(mesh_data['elementOrientations'])
+    grid['e1'] = orient[:,0:3]
+    grid['e2'] = orient[:,3:6]
+    grid['e3'] = orient[:,6:]
     grid['elem_set'] = np.zeros(grid.n_cells, dtype=int)
     grid.cell_data['elem_set'] = 99999
     for i, element_set in enumerate(mesh_data['sets']['element']):
