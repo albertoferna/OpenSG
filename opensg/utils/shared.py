@@ -32,7 +32,7 @@ def xmdf_convert(mesh, subdomains):
     
     # --- Write the mesh to XDMF in PARALLEL ---
     # Each process will now write its OWN PIECE to the file.
-    with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "SG_solid.xdmf", "w") as xdmf:
+    with dolfinx.io.XDMFFile(MPI.COMM_WORLD,"SG_mesh.xdmf", "w") as xdmf:
         # This is now a parallel write operation
         xdmf.write_mesh(mesh)
         
@@ -85,7 +85,7 @@ def compute_nullspace(V, ABD=False):
 
 
     index_map = V.dofmap.index_map
-    nullspace_basis = [dolfinx.la.create_petsc_vector(index_map, V.dofmap.index_map_bs) for i in range(6)]
+    nullspace_basis = [dolfinx.la.create_petsc_vector(index_map, V.dofmap.index_map_bs) for i in range(dim)]
     with ExitStack() as stack:
         vec_local = [stack.enter_context(xx.localForm()) for xx in nullspace_basis]
         basis = [np.asarray(xx) for xx in vec_local]
@@ -162,6 +162,11 @@ def solve_ksp(A, F, V):
     #     PETSc.Options().setValue("ksp_monitor", "")  # Equivalent to "ksp_monitor": None in petsc_options
     ksp.setFromOptions()
     ksp.solve(F, w.x.petsc_vec)  # Solve scaled system
+
+    # Factorization returns arbitrary soln if there is a nullspace; remove for stability
+    nullspace = A.getNullSpace()
+    if nullspace:
+        nullspace.remove(w.x.petsc_vec)
 
     w.x.petsc_vec.ghostUpdate(
         addv=petsc4py.PETSc.InsertMode.INSERT, mode=petsc4py.PETSc.ScatterMode.FORWARD
@@ -312,19 +317,19 @@ def transform_beam_matrices(beam_stiff, beam_inertia):
     """
     Transform 6x6 beam stiffness and inertia matrices to a new reference frame.
 
-    Parameters:
+    Parameters
     ----------
     beam_stiff : np.ndarray
-        6x6 stiffness matrix
+        6x6 stiffness matrix.
     beam_inertia : np.ndarray
-        6x6 inertia matrix
+        6x6 inertia matrix.
 
-    Returns:
-    ----------
+    Returns
+    -------
     beam_stiff_tr : np.ndarray
-        Transformed 6x6 stiffness matrix
+        Transformed 6x6 stiffness matrix.
     beam_inertia_tr : np.ndarray
-        Transformed 6x6 inertia matrix
+        Transformed 6x6 inertia matrix.
     """
     # Example transformation matrix (customize as needed)
     B = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) 

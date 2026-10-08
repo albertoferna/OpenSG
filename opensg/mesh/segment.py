@@ -43,7 +43,7 @@ class ShellSegmentMesh:
         Processed database of material properties
     """
 
-    def __init__(self, segment_yaml_file, create_1D=False, end=False):
+    def __init__(self, segment_yaml_file, create_1D=False, end=False, output_dir=''):
         """Initialize a StandaloneSegmentMesh object from a YAML file.
 
         Parameters
@@ -75,10 +75,13 @@ class ShellSegmentMesh:
         self._build_boundary_submeshdata()
         
         if create_1D:
+            import os
             segid=segment_yaml_file.removesuffix('.yaml').split('_')[-1]
-            self.path_name='1Dshell_'+str(segid)+'.yaml'
-            self._create_1Dyaml(end)
+            prefix = output_dir + '/' if output_dir else ''
+            self.path_name=prefix+'1Dshell_'+str(segid)+'.yaml'
+            self._create_1Dyaml(False)
             if end:
+                self.path_name=prefix+'1Dshell_'+str(int(segid)+1)+'.yaml'
                 self._create_1Dyaml(end)
     def _build_layup_database(self):
         """Build the layup database from the segment data.
@@ -169,7 +172,8 @@ class ShellSegmentMesh:
     #        mode="w", suffix=".msh", delete=False
     #    ) as temp_msh:
       #      msh_filename = temp_msh.name
-        msh_filename='shell_section.msh'
+        filename='SG_mesh'
+        msh_filename=filename+'.msh'
         # Generate the mesh file content
         self.generate_mesh_file(msh_filename)
         
@@ -466,7 +470,7 @@ class ShellSegmentMesh:
             if end:
                 mesh=self.right_submesh["mesh"]
                 subdomains=self.right_submesh["subdomains"]
-                path_name='end'+self.path_name
+             #   path_name='end'+self.path_name
 
             # Convert nodes to string format
          #   nodes = list()
@@ -716,7 +720,8 @@ class ShellBounMesh:
     #        mode="w", suffix=".msh", delete=False
     #    ) as temp_msh:
       #      msh_filename = temp_msh.name
-        msh_filename='1Dshell.msh'
+        filename='SG_mesh'
+        msh_filename=filename+'.msh'
         # Generate the mesh file content
         self.generate_mesh_file(msh_filename)
         
@@ -887,7 +892,7 @@ class SolidSegmentMesh:
         List of material names
     """
 
-    def __init__(self, segment_yaml_file, create_2D=False,end=False):
+    def __init__(self, segment_yaml_file, create_2D=False, end=False, output_dir=''):
         """Initialize a StandaloneSolidSegmentMesh object from a YAML file.
 
         Parameters
@@ -924,9 +929,11 @@ class SolidSegmentMesh:
         
         if create_2D:
             segid=segment_yaml_file.removesuffix('.yaml').split('_')[-1]
-            self.path_name='2Dshell_'+str(segid)+'.yaml'
-            self._create_2Dyaml(end)
+            prefix = output_dir + '/' if output_dir else ''
+            self.path_name=prefix+'2Dsolid_'+str(segid)+'.yaml'
+            self._create_2Dyaml(False)
             if end:
+                self.path_name=prefix+'2Dsolid_'+str(int(segid)+1)+'.yaml'
                 self._create_2Dyaml(end)
     
     def _generate_layup_id(self):
@@ -936,7 +943,7 @@ class SolidSegmentMesh:
         self.elLayID = np.zeros((self.num_elements))
 
         for es in self.sets["element"]:
-            if es["labels"] is not None:
+            if es["labels"][0] is not None:
                 self.mat_name.append(es["name"])
                 lay_ct += 1
                 for eli in es["labels"]:
@@ -1007,7 +1014,8 @@ class SolidSegmentMesh:
       #  with tempfile.NamedTemporaryFile(
       #      mode="w", suffix=".msh", delete=False
       #  ) as temp_msh:
-        msh_filename = 'Taper3D.msh'
+        filename='SG_mesh'
+        msh_filename = filename+'.msh'
 
         # Generate the mesh file content
         self.generate_mesh_file(msh_filename)
@@ -1196,7 +1204,8 @@ class SolidSegmentMesh:
 
             for i, xx in enumerate(boundary_entity_map):
                 # assign subdomain
-                idx = int(np.where(cell_of_facet_mesh.array == xx)[0] / el_facets)
+              #  idx = int(np.where(cell_of_facet_mesh.array == xx)[0] / el_facets) Updated 2026_02_03 by Akshat
+                idx = int((np.where(cell_of_facet_mesh.array == xx)[0] / el_facets)[0])
                 boundary_subdomains.append(self.subdomains.values[idx])
                 boun_element_map.append(idx)
                 # assign orientation
@@ -1253,7 +1262,7 @@ class SolidSegmentMesh:
             if end:
                 mesh=self.right_submesh["mesh"]
                 subdomains=self.right_submesh["subdomains"]
-                path_name='end'+self.path_name
+            #    path_name='end'+self.path_name
  #           print(f'    Writing {len(segment_node_ids)} nodes...')
        #     data_string =''
        #     data_string+="nodes:\n"
@@ -1521,7 +1530,8 @@ class SolidBounMesh:
         #    mode="w", suffix=".msh", delete=False
        # ) as temp_msh:
        #     msh_filename = temp_msh.name
-        msh_filename='2Dboun.msh'
+        filename='SG_mesh'
+        msh_filename=filename+'.msh'
         # Generate the mesh file content
         self.generate_mesh_file(msh_filename)
         
